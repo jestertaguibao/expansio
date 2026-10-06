@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OpenNext output
+.open-next/
+.wrangler/
+.next/.open-next/
