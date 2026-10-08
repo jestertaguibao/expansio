@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { UserTier } from '@/types/database';
-import { Crown, Sparkles, LogOut, Database, Shield, Tags, Settings2, MessageSquareHeart } from 'lucide-react';
+import { Crown, Sparkles, LogOut, Database, Shield, Tags, Settings2, MessageSquareHeart, Wallet } from 'lucide-react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -44,11 +44,13 @@ export default function TopNavigation({
   return (
     <header className="navbar bg-base-100 shadow-sm sticky top-0 z-30">
       <div className="navbar-start">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <img src="/logo.svg" alt="Expansio Logo" className="w-8 h-8 sm:w-9 sm:h-9" />
-          <div>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg shadow-sm flex shrink-0">
+            <Wallet className="w-5 h-5 text-white" />
+          </div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-slate-800">Expansio</span>
+              <span className="font-bold text-base tracking-tight text-slate-800">EXPENSIO</span>
               <span className="badge badge-ghost badge-sm font-mono text-slate-500 hidden sm:inline">v1.0</span>
             </div>
             <p className="text-[11px] text-slate-500 font-normal hidden sm:block">Excel-like Expense Ledger</p>
@@ -56,7 +58,7 @@ export default function TopNavigation({
         </div>
       </div>
 
-      <div className="navbar-center hidden md:flex">
+      <div className="navbar-center hidden lg:flex">
         {configured ? (
           <div className="badge badge-success gap-1 text-slate-700">
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
@@ -72,7 +74,7 @@ export default function TopNavigation({
         )}
       </div>
 
-      <div className="navbar-end gap-1 sm:gap-2">
+      <div className="navbar-end flex-1 min-w-0 justify-end gap-1 sm:gap-2">
         {/* Admin Panel Link — only visible to admins */}
         {isAdmin && (
           <Link
@@ -80,8 +82,8 @@ export default function TopNavigation({
             className="btn btn-sm btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
           >
             <Shield className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">User Management</span>
-            <span className="sm:hidden">Admin</span>
+            <span className="hidden lg:inline">User Management</span>
+            <span className="lg:hidden">Admin</span>
           </Link>
         )}
 
@@ -139,7 +141,7 @@ export default function TopNavigation({
 
         {/* User Email & Sign Out */}
         <div className="flex items-center gap-2 pl-2 border-l border-base-300">
-          <div className="hidden sm:flex flex-col text-right">
+          <div className="hidden lg:flex flex-col text-right">
             <span className="text-xs font-medium text-slate-700 truncate max-w-[140px]">
               {userEmail || 'demo-user'}
             </span>

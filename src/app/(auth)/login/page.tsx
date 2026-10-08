@@ -4,12 +4,12 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Sign In',
-  description: 'Sign in to your Expansio account and pick up your Excel-like income & expense ledger where you left off.',
+  description: 'Sign in to your EXPENSIO account and pick up your Excel-like income & expense ledger where you left off.',
 };
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-base-200">
+    <main className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-gradient-to-b from-emerald-50 via-slate-50 to-white">
       <Suspense fallback={<div className="text-base-content/60 text-sm">Loading sign in...</div>}>
         <LoginForm />
       </Suspense>

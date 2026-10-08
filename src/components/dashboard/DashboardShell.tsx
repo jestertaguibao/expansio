@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { Category, Expense, Profile, TimeFilter, UserTier } from '@/types/database';
 import {
@@ -273,8 +274,13 @@ export default function DashboardShell() {
   };
 
   // Add new row handler
-  const handleAddRow = async () => {
-    const defaultCat = categories[0] || null;
+  const handleAddRow = async (preferredType?: 'income' | 'expense') => {
+    // Pick a category matching the requested type (from the mobile quick-add bar),
+    // otherwise fall back to the first available category.
+    const defaultCat =
+      (preferredType ? categories.find((c) => c.type === preferredType) : undefined) ||
+      categories[0] ||
+      null;
     const tempId = `exp-${Date.now()}`;
     const newDate = referenceDate || getTodayDateString();
 
@@ -667,7 +673,7 @@ export default function DashboardShell() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 max-sm:pb-28">
         {/* Supabase Notice Banner if not connected */}
         <EnvConfigBanner />
 
@@ -714,13 +720,34 @@ export default function DashboardShell() {
               categories={categories}
               onUpdateExpense={handleUpdateExpense}
               onDeleteExpense={handleDeleteExpense}
-              onAddRow={handleAddRow}
+              onAddRow={() => handleAddRow()}
               savingRowIds={savingRowIds}
               isLoading={isLoading}
             />
           </div>
         </div>
       </main>
+
+      {/* Floating Quick-Add Bar (mobile only) — mirrors the desktop "Add Row" action,
+         pre-selecting an income vs. expense category so the new row lands typed. */}
+      <div className="fixed bottom-4 left-4 right-4 z-50 flex gap-3 sm:hidden">
+        <button
+          type="button"
+          onClick={() => handleAddRow('income')}
+          className="btn flex-1 border-none bg-emerald-600 text-white font-semibold hover:bg-emerald-700 active:bg-emerald-800 shadow-lg shadow-emerald-600/30 gap-1.5"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Income</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleAddRow('expense')}
+          className="btn flex-1 border-none bg-rose-600 text-white font-semibold hover:bg-rose-700 active:bg-rose-800 shadow-lg shadow-rose-600/30 gap-1.5"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Expense</span>
+        </button>
+      </div>
 
       {/* Modals */}
       <DonorModal

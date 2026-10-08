@@ -40,7 +40,7 @@ export default function DonorModal({
             <Crown className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white tracking-tight">Expansio Donor Tier</h3>
+            <h3 className="text-lg font-bold text-white tracking-tight">EXPENSIO Donor Tier</h3>
             <p className="text-xs text-zinc-400">Unlock advanced ledger & export capabilities</p>
           </div>
         </div>

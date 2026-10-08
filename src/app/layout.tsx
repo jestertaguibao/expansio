@@ -17,11 +17,11 @@ export const siteUrl = 'https://expensio.online';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Expansio | Excel-like Expense Tracker & Ledger',
-    template: '%s | Expansio',
+    default: 'EXPENSIO | Excel-like Expense Tracker & Ledger',
+    template: '%s | EXPENSIO',
   },
   description:
-    'Expansio is a lightweight, lightning-fast Excel-like ledger for tracking personal and business income and expenses. Inline editing, real-time sync, and instant analytics — free at expensio.online.',
+    'EXPENSIO is a lightweight, lightning-fast Excel-like ledger for tracking personal and business income and expenses. Inline editing, real-time sync, and instant analytics — free at expensio.online.',
   keywords: [
     'expense tracker',
     'online ledger',
@@ -31,15 +31,15 @@ export const metadata: Metadata = {
     'income and expense tracker',
     'expensio',
   ],
-  authors: [{ name: 'Expansio', url: siteUrl }],
-  creator: 'Expansio',
-  applicationName: 'Expansio',
+  authors: [{ name: 'EXPENSIO', url: siteUrl }],
+  creator: 'EXPENSIO',
+  applicationName: 'EXPENSIO',
   category: 'finance',
   openGraph: {
     type: 'website',
     url: siteUrl,
-    siteName: 'Expansio',
-    title: 'Expansio | Spreadsheet Speed. Modern Ledger Power.',
+    siteName: 'EXPENSIO',
+    title: 'EXPENSIO | Spreadsheet Speed. Modern Ledger Power.',
     description:
       'Track income and expenses with the familiarity of a spreadsheet, backed by real-time sync and powerful analytics. Get started free on expensio.online.',
     locale: 'en_US',
@@ -48,13 +48,13 @@ export const metadata: Metadata = {
         url: '/og-image.png', // drop a 1200x630 image into /public to enable OG sharing
         width: 1200,
         height: 630,
-        alt: 'Expansio — Excel-like Expense Ledger',
+        alt: 'EXPENSIO — Excel-like Expense Ledger',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Expansio | Excel-like Expense Tracker & Ledger',
+    title: 'EXPENSIO | Excel-like Expense Tracker & Ledger',
     description:
       'Spreadsheet speed with modern app power. Track income and expenses in real time — free at expensio.online.',
     images: ['/og-image.png'],

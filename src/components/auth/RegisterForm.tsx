@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { ArrowRight, Lock, Mail, AlertCircle, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Lock, Mail, AlertCircle, CheckCircle2, Loader2, ShieldCheck, Wallet } from 'lucide-react';
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -92,9 +92,11 @@ export default function RegisterForm() {
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <div className="flex items-center gap-3 mb-6">
-            <img src="/logo.svg" alt="Expansio Logo" className="w-10 h-10" />
+            <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg shadow-sm flex shrink-0">
+              <Wallet className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Expansio</h1>
+              <h1 className="text-xl font-bold tracking-tight">EXPENSIO</h1>
               <p className="text-xs text-base-content/60">Excel-like Expense Ledger</p>
             </div>
           </div>

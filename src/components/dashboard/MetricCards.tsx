@@ -34,12 +34,13 @@ export default function MetricCards({
   const periodLabel = timeFilterLabels[activeTimeFilter] || 'Active Period';
 
   return (
-    /* Mobile (< sm): sticky strip pinned under the navbar (DaisyUI navbar = 4rem tall).
-       Desktop (sm+): all max-sm styles fall away → original grid layout is preserved. */
-    <div className="max-sm:sticky max-sm:top-16 max-sm:z-20 max-sm:bg-base-100/95 max-sm:backdrop-blur max-sm:shadow-sm max-sm:-mx-4 max-sm:px-3 max-sm:py-2">
-      <div className="flex gap-2.5 overflow-x-auto pb-1 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-4 sm:pb-0 sm:overflow-visible lg:grid-cols-4">
+    /* Mobile (< sm): sticky strip pinned under the navbar, compact 2-column grid
+       showing only Income + Expense (Balance/Savings hidden to save vertical space).
+       Desktop (sm+): original multi-row grid layout is preserved. */
+    <div className="max-sm:sticky max-sm:top-16 max-sm:z-40 max-sm:bg-base-100/95 max-sm:backdrop-blur-sm max-sm:border-b max-sm:border-slate-200 max-sm:shadow-sm max-sm:-mx-4 max-sm:px-4 max-sm:pt-4 max-sm:pb-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
       {/* Total Income */}
-      <div className="stat snap-start shrink-0 basis-[47%] p-3 sm:basis-auto sm:shrink sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
+      <div className="stat p-3 sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
         <div className="stat-figure text-emerald-600">
           <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
@@ -56,7 +57,7 @@ export default function MetricCards({
       </div>
 
       {/* Total Expenses */}
-      <div className="stat snap-start shrink-0 basis-[47%] p-3 sm:basis-auto sm:shrink sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
+      <div className="stat p-3 sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
         <div className="stat-figure text-rose-600">
           <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
@@ -73,7 +74,7 @@ export default function MetricCards({
       </div>
 
       {/* Remaining Balance */}
-      <div className="stat snap-start shrink-0 basis-[47%] p-3 sm:basis-auto sm:shrink sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
+      <div className="stat max-sm:hidden p-3 sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
         <div className="stat-figure text-slate-600">
           <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
@@ -93,7 +94,7 @@ export default function MetricCards({
       </div>
 
       {/* Savings Rate & Activity */}
-      <div className="stat snap-start shrink-0 basis-[47%] p-3 sm:basis-auto sm:shrink sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
+      <div className="stat max-sm:hidden p-3 sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
         <div className="stat-figure text-slate-600">
           <PiggyBank className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>

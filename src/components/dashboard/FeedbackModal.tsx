@@ -96,7 +96,7 @@ export default function FeedbackModal({ isOpen, onClose, userTier }: FeedbackMod
           {/* Rating */}
           <div>
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
-              How is Expansio? (optional)
+              How is EXPENSIO? (optional)
             </label>
             <div className="flex items-center gap-1" onMouseLeave={() => setHoveredStars(0)}>
               {[1, 2, 3, 4, 5].map((star) => (
