@@ -19,6 +19,8 @@ import SidebarFilters from './SidebarFilters';
 import SpreadsheetLedger from './SpreadsheetLedger';
 import DonorModal from './DonorModal';
 import CategoryModal from './CategoryModal';
+import SettingsModal from './SettingsModal';
+import FeedbackModal from './FeedbackModal';
 import EnvConfigBanner from './EnvConfigBanner';
 
 export default function DashboardShell() {
@@ -28,6 +30,7 @@ export default function DashboardShell() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<UserTier>('free');
+  const [currency, setCurrency] = useState<string>('USD');
 
   // Ledger Data State
   const [categories, setCategories] = useState<Category[]>([]);
@@ -47,6 +50,11 @@ export default function DashboardShell() {
   // Modals
   const [donorModalOpen, setDonorModalOpen] = useState<boolean>(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState<boolean>(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState<boolean>(false);
+
+  // Excel export (server-backed) in-flight flag
+  const [excelExporting, setExcelExporting] = useState<boolean>(false);
 
   // Debounce timers for inline saving
   const saveTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
@@ -68,6 +76,9 @@ export default function DashboardShell() {
         } else {
           setUserEmail('demo@expansio.local');
         }
+
+        const savedCurrency = localStorage.getItem('expansio_currency');
+        if (savedCurrency) setCurrency(savedCurrency);
 
         const savedExpenses = localStorage.getItem('expansio_mock_expenses');
         if (savedExpenses) {
@@ -115,15 +126,18 @@ export default function DashboardShell() {
         setUserEmail(user.email ?? null);
         setUserId(user.id);
 
-        // 2. Fetch profile tier
+        // 2. Fetch profile tier + currency preference
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('tier')
+          .select('tier, currency')
           .eq('id', user.id)
           .single();
 
         if (profileData?.tier) {
           setUserTier(profileData.tier as UserTier);
+        }
+        if (profileData?.currency) {
+          setCurrency(profileData.currency as string);
         }
 
         // 3. Fetch categories (global or user specific)
@@ -472,6 +486,29 @@ export default function DashboardShell() {
     }
   };
 
+  // Currency preference update (Account Settings modal)
+  const handleUpdateCurrency = async (newCurrency: string) => {
+    if (!/^[A-Z]{3}$/.test(newCurrency)) {
+      throw new Error('Invalid currency code.');
+    }
+    setCurrency(newCurrency);
+
+    if (!configured) {
+      localStorage.setItem('expansio_currency', newCurrency);
+      return;
+    }
+
+    if (!userId) throw new Error('Not signed in — cannot save currency.');
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ currency: newCurrency })
+      .eq('id', userId);
+
+    if (error) throw error;
+  };
+
   // Filtered expenses based on time horizon, category, type, and search query
   const filteredExpenses = useMemo(() => {
     // 1. Time horizon filter
@@ -542,6 +579,80 @@ export default function DashboardShell() {
     exportExpensesToCsv(filteredExpenses, filename);
   };
 
+  // Excel Export — donor gated. Live mode posts filtered rows to
+  // /api/export/excel, where the tier is re-validated server-side against
+  // profiles.tier (the UI gate is UX only, the API gate is the real one).
+  const handleExportExcel = async () => {
+    const rows = filteredExpenses.map((e) => ({
+      expense_date: e.expense_date,
+      category: e.categories?.name || 'Uncategorized',
+      type: e.categories?.type || 'expense',
+      amount: e.amount,
+      notes: e.notes || '',
+    }));
+
+    if (rows.length === 0) {
+      alert('Nothing to export in the current view — adjust your filters.');
+      return;
+    }
+
+    const filename = `expansio_ledger_${activeTimeFilter}_${referenceDate}.xlsx`;
+
+    // Demo mode (no Supabase): build the workbook entirely client-side
+    if (!configured) {
+      const XLSX = await import('xlsx');
+      const aoa = [
+        ['Date', 'Category', 'Type', 'Amount', 'Notes'],
+        ...rows.map((r) => [r.expense_date, r.category, r.type, r.amount, r.notes]),
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 12 }, { wch: 26 }, { wch: 10 }, { wch: 14 }, { wch: 48 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
+      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const url = URL.createObjectURL(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    setExcelExporting(true);
+    try {
+      const res = await fetch('/api/export/excel', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, periodLabel: activeTimeFilter }),
+      });
+
+      if (res.status === 403) {
+        // Server says what the UI missed — force the upgrade path
+        setDonorModalOpen(true);
+        return;
+      }
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || `Export failed (HTTP ${res.status})`);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('[Expansio] Excel export failed:', err);
+      alert(err instanceof Error ? err.message : 'Excel export failed. Please try again.');
+    } finally {
+      setExcelExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-base-100 flex flex-col font-sans">
       {/* Top Header */}
@@ -550,6 +661,8 @@ export default function DashboardShell() {
         userTier={userTier}
         onOpenDonorModal={() => setDonorModalOpen(true)}
         onOpenCategoryModal={() => setCategoryModalOpen(true)}
+        onOpenSettingsModal={() => setSettingsModalOpen(true)}
+        onOpenFeedbackModal={() => setFeedbackModalOpen(true)}
         onTierChange={handleUpdateTier}
       />
 
@@ -566,6 +679,7 @@ export default function DashboardShell() {
             netBalance={metrics.netBalance}
             transactionCount={metrics.transactionCount}
             activeTimeFilter={activeTimeFilter}
+            currency={currency}
           />
         </div>
 
@@ -579,6 +693,8 @@ export default function DashboardShell() {
               userTier={userTier}
               onOpenDonorModal={() => setDonorModalOpen(true)}
               onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+              excelExporting={excelExporting}
               categories={categories}
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
@@ -620,6 +736,21 @@ export default function DashboardShell() {
         categories={categories}
         onAddCategory={handleAddCategory}
         onSeedDefaultCategories={handleSeedDefaultCategories}
+      />
+
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        currency={currency}
+        userTier={userTier}
+        userEmail={userEmail}
+        onSaveCurrency={handleUpdateCurrency}
+      />
+
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        userTier={userTier}
       />
     </div>
   );

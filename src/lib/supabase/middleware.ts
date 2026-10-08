@@ -57,10 +57,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Root path handler: redirect to dashboard if authenticated or demo, otherwise login
-  if (request.nextUrl.pathname === '/') {
+  // Root path handler: signed-in (or demo) users go straight to the dashboard;
+  // unauthenticated visitors stay on the marketing landing page at `/`.
+  // (The login screen lives only at `/login` — never redirect `/` to it.)
+  if (request.nextUrl.pathname === '/' && (user || isDemo)) {
     const url = request.nextUrl.clone();
-    url.pathname = user || isDemo ? '/dashboard' : '/login';
+    url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 

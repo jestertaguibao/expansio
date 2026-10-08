@@ -3,8 +3,8 @@ import RegisterForm from '@/components/auth/RegisterForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Sign Up | Expansio - Excel-like Expense Ledger',
-  description: 'Create an account on Expansio.',
+  title: 'Create Your Account',
+  description: 'Create a free Expansio account and start tracking income and expenses with spreadsheet speed.',
 };
 
 export default function RegisterPage() {

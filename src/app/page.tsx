@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Expansio | Excel-like Expense Tracker',
-  description: 'Lightweight, lightning-fast Excel-like ledger for personal and business expenses.',
+  title: 'Expansio | Excel-like Expense Tracker & Online Ledger',
+  description: 'Spreadsheet speed, modern app power. Track income and expenses with an inline-editable ledger, real-time sync, and instant analytics — free on expensio.online.',
+  alternates: { canonical: '/' },
 };
 
 export default function Home() {
@@ -43,12 +44,12 @@ export default function Home() {
             <p className="py-6 text-lg text-slate-600">
               Track expenses with the familiarity of a spreadsheet, backed by real-time sync and powerful analytics.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register" className="btn btn-primary btn-lg">
                 Get Started for Free
               </Link>
-              <Link href="#features" className="btn btn-outline btn-lg">
-                Learn More
+              <Link href="/login" className="btn btn-outline btn-lg">
+                Sign In to Your Ledger
               </Link>
             </div>
           </div>

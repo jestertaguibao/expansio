@@ -12,6 +12,7 @@ import {
   ChevronRight,
   RotateCcw,
   Sparkles,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { getTodayDateString } from '@/lib/utils';
 
@@ -21,6 +22,8 @@ interface SidebarFiltersProps {
   userTier: UserTier;
   onOpenDonorModal: () => void;
   onExportCsv: () => void;
+  onExportExcel: () => void;
+  excelExporting?: boolean;
   categories: Category[];
   selectedCategory: string;
   onSelectCategory: (categoryId: string) => void;
@@ -38,6 +41,8 @@ export default function SidebarFilters({
   userTier,
   onOpenDonorModal,
   onExportCsv,
+  onExportExcel,
+  excelExporting,
   categories,
   selectedCategory,
   onSelectCategory,
@@ -96,6 +101,14 @@ export default function SidebarFilters({
       return;
     }
     onExportCsv();
+  };
+
+  const handleExcelClick = () => {
+    if (!isDonorOrAdmin) {
+      onOpenDonorModal();
+      return;
+    }
+    onExportExcel();
   };
 
   return (
@@ -273,8 +286,8 @@ export default function SidebarFilters({
         </div>
       </div>
 
-      {/* CSV Export Button (Donor Gated) */}
-      <div className="pt-4 border-t border-base-200">
+      {/* Export Buttons (Donor Gated — tier is re-verified server-side in /api/export/excel) */}
+      <div className="pt-4 border-t border-base-200 space-y-2">
         <button
           type="button"
           onClick={handleCsvClick}
@@ -290,9 +303,27 @@ export default function SidebarFilters({
             <Lock className="w-3.5 h-3.5 text-amber-500 ml-auto group-hover:scale-110 transition-transform" />
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={handleExcelClick}
+          disabled={excelExporting}
+          className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:cursor-wait ${
+            isDonorOrAdmin
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600'
+              : 'bg-base-100 hover:bg-base-200 text-slate-500 border border-base-300 group'
+          }`}
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          <span>{excelExporting ? 'Building workbook…' : 'Export Ledger Excel'}</span>
+          {!isDonorOrAdmin && (
+            <Lock className="w-3.5 h-3.5 text-amber-500 ml-auto group-hover:scale-110 transition-transform" />
+          )}
+        </button>
+
         {!isDonorOrAdmin && (
-          <p className="text-[10px] text-slate-400 text-center mt-1.5">
-            CSV download requires Donor tier
+          <p className="text-[10px] text-slate-400 text-center">
+            CSV & Excel downloads require Donor tier
           </p>
         )}
       </div>

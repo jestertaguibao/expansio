@@ -6,14 +6,49 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number | null | undefined): string {
+// Currencies offered in Account Settings (ISO-4217 codes validated by the
+// profiles_currency_iso_check DB constraint)
+export const SUPPORTED_CURRENCIES: { code: string; label: string }[] = [
+  { code: 'USD', label: 'US Dollar' },
+  { code: 'EUR', label: 'Euro' },
+  { code: 'GBP', label: 'British Pound' },
+  { code: 'JPY', label: 'Japanese Yen' },
+  { code: 'NGN', label: 'Nigerian Naira' },
+  { code: 'PHP', label: 'Philippine Peso' },
+  { code: 'INR', label: 'Indian Rupee' },
+  { code: 'KES', label: 'Kenyan Shilling' },
+  { code: 'AED', label: 'UAE Dirham' },
+  { code: 'SAR', label: 'Saudi Riyal' },
+  { code: 'CAD', label: 'Canadian Dollar' },
+  { code: 'AUD', label: 'Australian Dollar' },
+  { code: 'CHF', label: 'Swiss Franc' },
+  { code: 'CNY', label: 'Chinese Yuan' },
+  { code: 'BRL', label: 'Brazilian Real' },
+  { code: 'ZAR', label: 'South African Rand' },
+  { code: 'SGD', label: 'Singapore Dollar' },
+  { code: 'MYR', label: 'Malaysian Ringgit' },
+  { code: 'MXN', label: 'Mexican Peso' },
+  { code: 'TRY', label: 'Turkish Lira' },
+];
+
+export function formatCurrency(amount: number | null | undefined, currency: string = 'USD'): string {
   const val = Number(amount || 0);
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(val);
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(val);
+  } catch {
+    // Unknown / invalid ISO code — fall back to USD formatting
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(val);
+  }
 }
 
 export function formatDateDisplay(dateStr: string | null | undefined): string {

@@ -3,6 +3,7 @@ export type UserTier = 'free' | 'donor' | 'admin';
 export interface Profile {
   id: string;
   tier: UserTier;
+  currency: string; // ISO-4217 code, defaults to 'USD'
   created_at: string;
 }
 
@@ -35,4 +36,13 @@ export interface FilterState {
   categoryFilter: string | 'all';
   typeFilter: 'all' | 'expense' | 'income';
   searchQuery: string;
+}
+
+export interface Feedback {
+  id: string;
+  user_id: string;
+  rating: number | null; // 1..5
+  message: string;
+  page: string | null;
+  created_at: string;
 }

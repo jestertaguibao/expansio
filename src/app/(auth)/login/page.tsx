@@ -3,8 +3,8 @@ import LoginForm from '@/components/auth/LoginForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Sign In | Expansio - Excel-like Expense Ledger',
-  description: 'Sign in to your Expansio ledger account.',
+  title: 'Sign In',
+  description: 'Sign in to your Expansio account and pick up your Excel-like income & expense ledger where you left off.',
 };
 
 export default function LoginPage() {

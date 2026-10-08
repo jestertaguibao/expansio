@@ -3,6 +3,7 @@ import { Category, Expense, Profile } from '@/types/database';
 export const INITIAL_MOCK_PROFILE: Profile = {
   id: 'demo-user-123',
   tier: 'free',
+  currency: 'USD',
   created_at: new Date().toISOString(),
 };
 

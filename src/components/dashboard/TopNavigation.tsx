@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { UserTier } from '@/types/database';
-import { Crown, Sparkles, LogOut, Database, Shield } from 'lucide-react';
+import { Crown, Sparkles, LogOut, Database, Shield, Tags, Settings2, MessageSquareHeart } from 'lucide-react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,6 +12,8 @@ interface TopNavigationProps {
   userTier: UserTier;
   onOpenDonorModal: () => void;
   onOpenCategoryModal: () => void;
+  onOpenSettingsModal: () => void;
+  onOpenFeedbackModal: () => void;
   onTierChange?: (tier: UserTier) => void;
 }
 
@@ -20,6 +22,8 @@ export default function TopNavigation({
   userTier,
   onOpenDonorModal,
   onOpenCategoryModal,
+  onOpenSettingsModal,
+  onOpenFeedbackModal,
   onTierChange,
 }: TopNavigationProps) {
   const router = useRouter();
@@ -40,14 +44,14 @@ export default function TopNavigation({
   return (
     <header className="navbar bg-base-100 shadow-sm sticky top-0 z-30">
       <div className="navbar-start">
-        <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="Expansio Logo" className="w-9 h-9" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <img src="/logo.svg" alt="Expansio Logo" className="w-8 h-8 sm:w-9 sm:h-9" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-base tracking-tight text-slate-800">Expansio</span>
-              <span className="badge badge-ghost badge-sm font-mono text-slate-500">v1.0</span>
+              <span className="badge badge-ghost badge-sm font-mono text-slate-500 hidden sm:inline">v1.0</span>
             </div>
-            <p className="text-[11px] text-slate-500 font-normal">Excel-like Expense Ledger</p>
+            <p className="text-[11px] text-slate-500 font-normal hidden sm:block">Excel-like Expense Ledger</p>
           </div>
         </div>
       </div>
@@ -68,7 +72,7 @@ export default function TopNavigation({
         )}
       </div>
 
-      <div className="navbar-end gap-2">
+      <div className="navbar-end gap-1 sm:gap-2">
         {/* Admin Panel Link — only visible to admins */}
         {isAdmin && (
           <Link
@@ -84,9 +88,33 @@ export default function TopNavigation({
         <button
           type="button"
           onClick={onOpenCategoryModal}
-          className="btn btn-sm btn-ghost text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+          className="btn btn-sm btn-ghost max-sm:w-8 max-sm:px-0 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+          title="Categories"
         >
-          Categories
+          <Tags className="w-4 h-4 sm:hidden" />
+          <span className="hidden sm:inline">Categories</span>
+        </button>
+
+        {/* Account Settings (currency, preferences) */}
+        <button
+          type="button"
+          onClick={onOpenSettingsModal}
+          className="btn btn-sm btn-ghost max-sm:w-8 max-sm:px-0 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+          title="Account Settings"
+        >
+          <Settings2 className="w-4 h-4 sm:hidden" />
+          <span className="hidden sm:inline">Settings</span>
+        </button>
+
+        {/* Feedback */}
+        <button
+          type="button"
+          onClick={onOpenFeedbackModal}
+          className="btn btn-sm btn-ghost max-sm:w-8 max-sm:px-0 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+          title="Send Feedback"
+        >
+          <MessageSquareHeart className="w-4 h-4 sm:hidden" />
+          <span className="hidden sm:inline">Feedback</span>
         </button>
 
         {/* Tier Badge / Upgrade trigger */}
@@ -102,7 +130,8 @@ export default function TopNavigation({
           }`}
         >
           <Crown className="w-3.5 h-3.5" />
-          <span className="capitalize">{userTier} Tier</span>
+          <span className="capitalize hidden sm:inline">{userTier} Tier</span>
+          <span className="capitalize sm:hidden">{userTier}</span>
           {userTier === 'free' && (
             <span className="badge badge-warning badge-xs">Upgrade</span>
           )}
