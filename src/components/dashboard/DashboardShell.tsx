@@ -727,7 +727,6 @@ export default function DashboardShell() {
         isOpen={donorModalOpen}
         onClose={() => setDonorModalOpen(false)}
         currentTier={userTier}
-        onUpdateTier={handleUpdateTier}
       />
 
       <CategoryModal

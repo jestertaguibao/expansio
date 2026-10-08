@@ -1,38 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { UserTier } from '@/types/database';
-import { Crown, Check, X, Sparkles, Download, Calendar, Shield, Zap } from 'lucide-react';
+import { Crown, X, Check, Calendar, Download, Zap } from 'lucide-react';
 import KofiDonorButton from './KofiDonorButton';
 
 interface DonorModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTier: UserTier;
-  onUpdateTier: (newTier: UserTier) => Promise<void>;
 }
 
 export default function DonorModal({
   isOpen,
   onClose,
   currentTier,
-  onUpdateTier,
 }: DonorModalProps) {
-  const [updating, setUpdating] = useState(false);
-
   if (!isOpen) return null;
 
-  const handleSelectTier = async (tier: UserTier) => {
-    try {
-      setUpdating(true);
-      await onUpdateTier(tier);
-      onClose();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUpdating(false);
-    }
-  };
+  const isDonorOrAdmin = currentTier === 'donor' || currentTier === 'admin';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in">
@@ -98,50 +84,32 @@ export default function DonorModal({
           </div>
         </div>
 
-        {/* Real payment path: Ko-fi checkout (new tab) + email-matching note.
-            The tier flip itself happens server-side in /api/webhooks/kofi. */}
-        <div className="mb-5 p-4 rounded-xl bg-zinc-950/50 border border-amber-500/20">
-          <KofiDonorButton
-            buttonClassName="btn-warning btn-sm"
-            noteClassName="text-zinc-400"
-          />
-        </div>
-
-        {/* Tier Switching Controls (For testing and donor activation) */}
-        <div className="border-t border-zinc-800/80 pt-5">
-          <div className="text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-3">
-            Current Tier: <span className="text-amber-400 font-mono capitalize">{currentTier}</span>
+        {/* Payment CTA (free users only): Ko-fi checkout in a new tab +
+            email-matching note. The tier flip happens server-side in
+            /api/webhooks/kofi — no manual tier switching in production UI. */}
+        {isDonorOrAdmin ? (
+          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
+            <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 mt-0.5">
+              <Check className="w-4 h-4 stroke-[2.5]" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-emerald-300">
+                You are an active Donor. Thank you for your support!
+              </h4>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                Yearly trends, CSV & Excel exports, and edge supercharging are unlocked
+                on this account{currentTier === 'admin' ? ' (Admin tier)' : ''}.
+              </p>
+            </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              disabled={updating || currentTier === 'free'}
-              onClick={() => handleSelectTier('free')}
-              className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
-                currentTier === 'free'
-                  ? 'bg-zinc-800 text-zinc-400 border-zinc-700 opacity-60'
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700'
-              }`}
-            >
-              Downgrade to Free
-            </button>
-
-            <button
-              type="button"
-              disabled={updating || currentTier === 'donor'}
-              onClick={() => handleSelectTier('donor')}
-              className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer ${
-                currentTier === 'donor'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 opacity-70'
-                  : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-zinc-950 shadow-amber-500/20'
-              }`}
-            >
-              <Crown className="w-3.5 h-3.5" />
-              <span>{currentTier === 'donor' ? 'Donor Active' : 'Activate Donor Tier'}</span>
-            </button>
+        ) : (
+          <div className="p-4 rounded-xl bg-zinc-950/50 border border-amber-500/20">
+            <KofiDonorButton
+              buttonClassName="btn-block bg-white text-zinc-950 border-none hover:bg-zinc-200"
+              noteClassName="text-zinc-400"
+            />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
