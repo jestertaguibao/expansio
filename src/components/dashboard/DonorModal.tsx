@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { UserTier } from '@/types/database';
 import { Crown, Check, X, Sparkles, Download, Calendar, Shield, Zap } from 'lucide-react';
+import KofiDonorButton from './KofiDonorButton';
 
 interface DonorModalProps {
   isOpen: boolean;
@@ -95,6 +96,15 @@ export default function DonorModal({
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Real payment path: Ko-fi checkout (new tab) + email-matching note.
+            The tier flip itself happens server-side in /api/webhooks/kofi. */}
+        <div className="mb-5 p-4 rounded-xl bg-zinc-950/50 border border-amber-500/20">
+          <KofiDonorButton
+            buttonClassName="btn-warning btn-sm"
+            noteClassName="text-zinc-400"
+          />
         </div>
 
         {/* Tier Switching Controls (For testing and donor activation) */}
