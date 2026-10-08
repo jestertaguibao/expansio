@@ -23,8 +23,6 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { UserTier } from '@/types/database';
 
-export const runtime = 'edge';
-
 const VALID_TIERS: UserTier[] = ['free', 'donor', 'admin'];
 
 // ─── Shared helper: verify session + admin tier ────────────────────────────
