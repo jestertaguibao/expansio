@@ -116,6 +116,11 @@ export default function SpreadsheetLedger({
                   expense.categories ||
                   categories.find((c) => c.id === expense.category_id);
                 const isIncome = category?.type === 'income';
+                // Picker shows only ACTIVE categories, plus this row's own category
+                // even if archived — so historical transactions still display/select their name.
+                const selectableCategories = categories.filter(
+                  (c) => !c.is_archived || c.id === expense.category_id
+                );
 
                 return (
                   <tr
@@ -167,9 +172,10 @@ export default function SpreadsheetLedger({
                         <option value="" disabled className="bg-white text-slate-500">
                           Select category...
                         </option>
-                        {categories.map((c) => (
+                        {selectableCategories.map((c) => (
                           <option key={c.id} value={c.id} className="bg-white text-slate-700">
-                            {c.name} ({c.type})
+                            {c.name}
+                            {c.is_archived ? ' · archived' : ''} ({c.type})
                           </option>
                         ))}
                       </select>

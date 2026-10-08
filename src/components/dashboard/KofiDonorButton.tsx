@@ -2,7 +2,10 @@
 
 import React from 'react';
 import { Heart, ExternalLink } from 'lucide-react';
-import { KOFI_SUPPORT_URL, KOFI_EMAIL_NOTE } from '@/lib/kofi';
+// Reminder: KOFI_SUPPORT_URL lives in @/lib/kofi (single source of truth). After
+// the $2 price pivot, swap it THERE for a real $2-specific Ko-fi Membership Tier /
+// Shop Item link — see the TODO(dev) in src/lib/kofi.ts — so checkout reflects $2.
+import { KOFI_SUPPORT_URL, KOFI_EMAIL_NOTE, KOFI_DONATION_AMOUNT_USD } from '@/lib/kofi';
 
 interface KofiDonorButtonProps {
   /** Extra classes for the <a> element (e.g. sizing/color in different shells) */
@@ -24,14 +27,14 @@ export default function KofiDonorButton({
   buttonClassName = 'btn-primary',
   noteClassName = 'text-base-content/60',
   hideNote = false,
-  label = 'Become a Donor',
+  label = `Become a Donor · $${KOFI_DONATION_AMOUNT_USD}`,
 }: KofiDonorButtonProps) {
   return (
     <div className="flex flex-col items-center gap-2 w-full">
       {/* DaisyUI tooltip wrapper */}
       <div
         className="tooltip tooltip-top w-auto"
-        data-tip="Opens Ko-fi in a new tab · pay with your registered email"
+        data-tip={`Support with a $${KOFI_DONATION_AMOUNT_USD} donation · use your registered email`}
       >
         <a
           href={KOFI_SUPPORT_URL}

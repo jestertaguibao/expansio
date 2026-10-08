@@ -104,6 +104,13 @@ export default function DonorModal({
           </div>
         ) : (
           <div className="p-4 rounded-xl bg-zinc-950/50 border border-amber-500/20">
+            <div className="flex items-baseline justify-center gap-1 mb-1">
+              <span className="text-3xl font-extrabold text-white">$2</span>
+              <span className="text-sm text-zinc-400">/month</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 text-center mb-3 leading-snug">
+              Less than the cost of a coffee. Designed to help you save for thousands.
+            </p>
             <KofiDonorButton
               buttonClassName="btn-block bg-white text-zinc-950 border-none hover:bg-zinc-200"
               noteClassName="text-zinc-400"

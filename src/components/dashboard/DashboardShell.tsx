@@ -23,6 +23,7 @@ import CategoryModal from './CategoryModal';
 import SettingsModal from './SettingsModal';
 import FeedbackModal from './FeedbackModal';
 import EnvConfigBanner from './EnvConfigBanner';
+import { archiveCategory, reactivateCategory } from '@/lib/actions/categories';
 
 export default function DashboardShell() {
   const configured = isSupabaseConfigured();
@@ -275,11 +276,11 @@ export default function DashboardShell() {
 
   // Add new row handler
   const handleAddRow = async (preferredType?: 'income' | 'expense') => {
-    // Pick a category matching the requested type (from the mobile quick-add bar),
-    // otherwise fall back to the first available category.
+    // Only ACTIVE (non-archived) categories are offered when creating a new row.
+    const activeCategories = categories.filter((c) => !c.is_archived);
     const defaultCat =
-      (preferredType ? categories.find((c) => c.type === preferredType) : undefined) ||
-      categories[0] ||
+      (preferredType ? activeCategories.find((c) => c.type === preferredType) : undefined) ||
+      activeCategories[0] ||
       null;
     const tempId = `exp-${Date.now()}`;
     const newDate = referenceDate || getTodayDateString();
@@ -391,14 +392,47 @@ export default function DashboardShell() {
     }
   };
 
-  // Add custom category
+  // Add custom category — duplicate-safe: reactivates an archived match or is a
+  // no-op if an active one already exists, otherwise inserts a brand-new row.
   const handleAddCategory = async (name: string, type: 'expense' | 'income') => {
+    const trimmed = name.trim();
+    const norm = (s: string) => s.trim().toLowerCase();
+    const existing = categories.find(
+      (c) => c.type === type && norm(c.name) === norm(trimmed)
+    );
+
+    // A live category with the same name/type already exists → nothing to do.
+    if (existing && !existing.is_archived) {
+      return;
+    }
+
+    // An archived category with the same name/type → REACTIVATE it instead of
+    // inserting (avoids a unique-constraint clash and preserves its history link).
+    if (existing && existing.is_archived) {
+      if (!configured) {
+        const next = categories.map((c) =>
+          c.id === existing.id ? { ...c, is_archived: false } : c
+        );
+        setCategories(next);
+        persistDemoCategories(next);
+        return;
+      }
+      const res = await reactivateCategory(existing.id);
+      if (!res.ok) throw new Error(res.error);
+      setCategories((prev) =>
+        prev.map((c) => (c.id === existing.id ? { ...c, is_archived: false } : c))
+      );
+      return;
+    }
+
+    // Brand-new category.
     const tempId = `cat-${Date.now()}`;
     const newCategory: Category = {
       id: tempId,
       user_id: userId,
-      name,
+      name: trimmed,
       type,
+      is_archived: false,
       created_at: new Date().toISOString(),
     };
 
@@ -414,8 +448,9 @@ export default function DashboardShell() {
       .from('categories')
       .insert({
         user_id: userId,
-        name,
+        name: trimmed,
         type,
+        is_archived: false,
       })
       .select('*')
       .single();
@@ -427,7 +462,8 @@ export default function DashboardShell() {
     }
   };
 
-  // Seed standard starter categories
+  // Seed standard starter categories — duplicate-safe: reactivates archived
+  // matches and inserts only names that are truly missing.
   const handleSeedDefaultCategories = async () => {
     const starterList: { name: string; type: 'expense' | 'income' }[] = [
       { name: 'Salary & Client Pay', type: 'income' },
@@ -440,25 +476,61 @@ export default function DashboardShell() {
       { name: 'Dining & Entertainment', type: 'expense' },
     ];
 
+    const norm = (s: string) => s.trim().toLowerCase();
+    const archivedMatch = (name: string, type: 'expense' | 'income') =>
+      categories.find((c) => c.is_archived && c.type === type && norm(c.name) === norm(name));
+    const anyMatch = (name: string, type: 'expense' | 'income', list: Category[]) =>
+      list.some((c) => c.type === type && norm(c.name) === norm(name));
+
+    // ── Demo mode: reactivate archived matches, append genuinely-missing rows ──
     if (!configured) {
-      const seeded: Category[] = starterList.map((item, idx) => ({
-        id: `cat-seed-${idx}`,
-        user_id: null,
-        name: item.name,
-        type: item.type,
-        created_at: new Date().toISOString(),
-      }));
-      setCategories(seeded);
-      persistDemoCategories(seeded);
+      let next = categories.map((c) => {
+        const starter = starterList.find((s) => s.type === c.type && norm(s.name) === norm(c.name));
+        return starter && c.is_archived ? { ...c, is_archived: false } : c;
+      });
+      const toAdd: Category[] = starterList
+        .filter((s) => !anyMatch(s.name, s.type, next))
+        .map((s, idx) => ({
+          id: `cat-seed-${Date.now()}-${idx}`,
+          user_id: null,
+          name: s.name,
+          type: s.type,
+          is_archived: false,
+          created_at: new Date().toISOString(),
+        }));
+      next = [...next, ...toAdd];
+      setCategories(next);
+      persistDemoCategories(next);
       return;
     }
 
+    // ── Live Supabase mode ──
+    // 1) Reactivate archived categories that share a starter name.
+    const reactivationIds = starterList
+      .map((s) => archivedMatch(s.name, s.type)?.id)
+      .filter((id): id is string => Boolean(id));
+
+    if (reactivationIds.length) {
+      const results = await Promise.all(reactivationIds.map((id) => reactivateCategory(id)));
+      const failed = results.find((r) => !r.ok);
+      if (failed?.error) throw new Error(failed.error);
+      setCategories((prev) =>
+        prev.map((c) => (reactivationIds.includes(c.id) ? { ...c, is_archived: false } : c))
+      );
+    }
+
+    // 2) Insert only names not already present (active or archived).
     const supabase = createClient();
-    const rowsToInsert = starterList.map((item) => ({
-      user_id: userId,
-      name: item.name,
-      type: item.type,
-    }));
+    const rowsToInsert = starterList
+      .filter((s) => !anyMatch(s.name, s.type, categories))
+      .map((s) => ({
+        user_id: userId,
+        name: s.name,
+        type: s.type,
+        is_archived: false,
+      }));
+
+    if (rowsToInsert.length === 0) return;
 
     const { data, error } = await supabase
       .from('categories')
@@ -470,6 +542,33 @@ export default function DashboardShell() {
     } else if (data) {
       setCategories((prev) => [...prev, ...data]);
     }
+  };
+
+  // Soft-delete a category: flips is_archived = true (never a DELETE), so any
+  // historical expenses keep their category_id and still resolve the name.
+  const handleArchiveCategory = async (id: string) => {
+    if (!configured) {
+      const next = categories.map((c) => (c.id === id ? { ...c, is_archived: true } : c));
+      setCategories(next);
+      persistDemoCategories(next);
+      return;
+    }
+    const res = await archiveCategory(id);
+    if (!res.ok) throw new Error(res.error);
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, is_archived: true } : c)));
+  };
+
+  // Restore an archived category back into the active picker.
+  const handleRestoreCategory = async (id: string) => {
+    if (!configured) {
+      const next = categories.map((c) => (c.id === id ? { ...c, is_archived: false } : c));
+      setCategories(next);
+      persistDemoCategories(next);
+      return;
+    }
+    const res = await reactivateCategory(id);
+    if (!res.ok) throw new Error(res.error);
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, is_archived: false } : c)));
   };
 
   // Tier update handler (e.g. Upgrade to Donor)
@@ -781,6 +880,8 @@ export default function DashboardShell() {
         categories={categories}
         onAddCategory={handleAddCategory}
         onSeedDefaultCategories={handleSeedDefaultCategories}
+        onArchiveCategory={handleArchiveCategory}
+        onRestoreCategory={handleRestoreCategory}
       />
 
       <SettingsModal

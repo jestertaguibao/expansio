@@ -2,7 +2,17 @@
 
 import React, { useState } from 'react';
 import { Category } from '@/types/database';
-import { Tag, Plus, X, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import {
+  Tag,
+  Plus,
+  X,
+  Loader2,
+  Sparkles,
+  AlertCircle,
+  Trash2,
+  RotateCcw,
+  Archive,
+} from 'lucide-react';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -10,6 +20,10 @@ interface CategoryModalProps {
   categories: Category[];
   onAddCategory: (name: string, type: 'expense' | 'income') => Promise<void>;
   onSeedDefaultCategories?: () => Promise<void>;
+  /** Soft-delete (archive) a category — flips is_archived = true, never deletes. */
+  onArchiveCategory?: (id: string) => Promise<void>;
+  /** Restore an archived category back into the active picker. */
+  onRestoreCategory?: (id: string) => Promise<void>;
 }
 
 export default function CategoryModal({
@@ -18,6 +32,8 @@ export default function CategoryModal({
   categories,
   onAddCategory,
   onSeedDefaultCategories,
+  onArchiveCategory,
+  onRestoreCategory,
 }: CategoryModalProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'expense' | 'income'>('expense');
@@ -25,7 +41,14 @@ export default function CategoryModal({
   const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Inline confirm state for the soft-delete ("Delete") action.
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
   if (!isOpen) return null;
+
+  const activeCategories = categories.filter((c) => !c.is_archived);
+  const archivedCategories = categories.filter((c) => c.is_archived);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +59,8 @@ export default function CategoryModal({
       setSubmitting(true);
       await onAddCategory(name.trim(), type);
       setName('');
-    } catch (err: any) {
-      setError(err?.message || 'Failed to add category');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add category');
     } finally {
       setSubmitting(false);
     }
@@ -49,10 +72,37 @@ export default function CategoryModal({
       setError(null);
       setSeeding(true);
       await onSeedDefaultCategories();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to seed categories');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to seed categories');
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const handleArchive = async (id: string) => {
+    if (!onArchiveCategory) return;
+    try {
+      setError(null);
+      setBusyId(id);
+      await onArchiveCategory(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete category');
+    } finally {
+      setBusyId(null);
+      setConfirmId(null);
+    }
+  };
+
+  const handleRestore = async (id: string) => {
+    if (!onRestoreCategory) return;
+    try {
+      setError(null);
+      setBusyId(id);
+      await onRestoreCategory(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to restore category');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -131,10 +181,10 @@ export default function CategoryModal({
         <div className="flex-1 overflow-y-auto pr-1">
           <div className="flex items-center justify-between mb-2.5">
             <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Available Categories ({categories.length})
+              Available Categories ({activeCategories.length})
             </div>
 
-            {onSeedDefaultCategories && categories.length <= 1 && (
+            {onSeedDefaultCategories && activeCategories.length === 0 && (
               <button
                 type="button"
                 onClick={handleSeed}
@@ -152,30 +202,116 @@ export default function CategoryModal({
           </div>
 
           <div className="space-y-1.5">
-            {categories.length === 0 ? (
+            {activeCategories.length === 0 && archivedCategories.length === 0 ? (
               <div className="text-center py-6 text-zinc-500 text-xs">
                 No categories yet. Add one above or load starter categories.
               </div>
             ) : (
-              categories.map((c) => (
+              activeCategories.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/40 border border-zinc-800/80 text-xs"
+                  className="rounded-xl bg-zinc-950/40 border border-zinc-800/80"
                 >
-                  <span className="font-medium text-zinc-200">{c.name}</span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold ${
-                      c.type === 'income'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                    }`}
-                  >
-                    {c.type}
-                  </span>
+                  <div className="flex items-center justify-between p-2.5 text-xs">
+                    <span className="font-medium text-zinc-200">{c.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold ${
+                          c.type === 'income'
+                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                        }`}
+                      >
+                        {c.type}
+                      </span>
+                      {onArchiveCategory && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmId(confirmId === c.id ? null : c.id)}
+                          title="Delete category"
+                          className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inline confirmation (soft delete) */}
+                  {confirmId === c.id && (
+                    <div className="px-2.5 pb-2.5">
+                      <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-[11px] text-rose-200">
+                        <div className="flex items-start gap-1.5 mb-2">
+                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span>Delete this category? Historical transactions will be kept.</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setConfirmId(null)}
+                            className="flex-1 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleArchive(c.id)}
+                            disabled={busyId === c.id}
+                            className="flex-1 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-zinc-950 font-semibold flex items-center justify-center gap-1 cursor-pointer disabled:opacity-60"
+                          >
+                            {busyId === c.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </div>
+
+          {/* Archived categories (soft-deleted) — kept for history, restorable */}
+          {archivedCategories.length > 0 && (
+            <div className="mt-5">
+              <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Archive className="w-3 h-3" />
+                <span>Archived ({archivedCategories.length})</span>
+              </div>
+              <div className="space-y-1.5">
+                {archivedCategories.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/20 border border-zinc-800/60 text-xs opacity-70"
+                  >
+                    <span className="font-medium text-zinc-400 line-through">{c.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase text-zinc-500">{c.type}</span>
+                      {onRestoreCategory && (
+                        <button
+                          type="button"
+                          onClick={() => handleRestore(c.id)}
+                          disabled={busyId === c.id}
+                          title="Restore category"
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                        >
+                          {busyId === c.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

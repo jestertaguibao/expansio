@@ -2,9 +2,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import {
   Wallet,
-  Zap,
-  RefreshCw,
-  ChartColumn,
+  PiggyBank,
   ArrowRight,
   Check,
   Sparkles,
@@ -15,7 +13,7 @@ import {
 export const metadata: Metadata = {
   title: 'EXPENSIO | Excel-like Expense Tracker & Online Ledger',
   description:
-    'EXPENSIO — spreadsheet speed, modern app power. Track income and expenses with an inline-editable ledger, real-time sync, and instant analytics. Free on expensio.online.',
+    'EXPENSIO brings the Japanese art of Kakeibo into the digital age. Track daily expenses with spreadsheet speed, reflect on your habits, and build intentional wealth — one row at a time. Free on expensio.online.',
   alternates: { canonical: '/' },
 };
 
@@ -28,24 +26,35 @@ const LEDGER_ROWS = [
   { date: 'Oct 02', name: 'Loan Repayment', tag: 'Expense', amount: '−$310.75', type: 'expense' },
 ];
 
-const FEATURES = [
+/* The four pillars (questions) of Kakeibo — the Japanese art of mindful saving. */
+const KAKEIBO_QUESTIONS = [
   {
-    icon: Zap,
-    iconWrap: 'bg-amber-100 text-amber-600',
-    title: 'Inline Editing, Zero Friction',
-    body: 'Click any cell and type — like Excel. No forms, no save buttons, no modal chains. Your keystrokes become rows.',
-  },
-  {
-    icon: RefreshCw,
-    iconWrap: 'bg-sky-100 text-sky-600',
-    title: 'Real-time Sync Everywhere',
-    body: 'Autosave to the edge in under a millisecond. Your phone, tablet, and laptop always show the same live ledger.',
-  },
-  {
-    icon: ChartColumn,
+    icon: Wallet,
     iconWrap: 'bg-emerald-100 text-emerald-600',
-    title: 'Instant Analytics',
-    body: 'Balance trends, savings rate, and category breakdowns recalculated as you type — daily, weekly, monthly, yearly.',
+    question: 'Question 1',
+    title: 'How much do you have?',
+    body: 'Instant clarity on your total income and available cash flow.',
+  },
+  {
+    icon: PiggyBank,
+    iconWrap: 'bg-teal-100 text-teal-600',
+    question: 'Question 2',
+    title: 'How much will you save?',
+    body: 'Set your intentional savings goals before the month even begins.',
+  },
+  {
+    icon: TrendingDown,
+    iconWrap: 'bg-rose-100 text-rose-600',
+    question: 'Question 3',
+    title: 'How much are you spending?',
+    body: 'Frictionless, spreadsheet-fast entry to track where every peso goes.',
+  },
+  {
+    icon: Sparkles,
+    iconWrap: 'bg-amber-100 text-amber-600',
+    question: 'Question 4',
+    title: 'How can you improve?',
+    body: 'Unlock long-term trends and exportable analytics to reflect on your financial habits.',
   },
 ];
 
@@ -105,22 +114,23 @@ export default function Home() {
           {/* Eyebrow badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 border border-emerald-200/70 backdrop-blur-sm text-xs md:text-sm font-semibold text-emerald-700 shadow-sm mb-8">
             <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>The spreadsheet-fast ledger for money that matters</span>
+            <span>The Japanese art of mindful saving, now digital</span>
           </div>
 
           {/* Headline */}
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.05]">
-            Spreadsheet speed.
-            <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
-              Modern app power.
+              Mindful spending
             </span>
+            <br />
+            at the speed of thought.
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mt-6 leading-relaxed">
-            Track income and expenses with the familiarity of a spreadsheet — backed by
-            real-time sync, inline editing, and analytics that recalculate as you type.
+            EXPENSIO brings the Japanese art of Kakeibo into the digital age. Track your
+            daily expenses with the familiarity of a spreadsheet, reflect on your habits,
+            and build intentional wealth — one row at a time.
           </p>
 
           {/* CTAs */}
@@ -225,28 +235,38 @@ export default function Home() {
 
       {/* ─────────────────────── Features ─────────────────────────────── */}
       <section id="features" className="bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 py-20 md:py-24">
-          <div className="md:col-span-3 text-center max-w-2xl mx-auto">
+        <div className="max-w-5xl mx-auto px-4 py-20 md:py-24">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-              Built for people who think in spreadsheets
+              The four questions of{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
+                Kakeibo
+              </span>
             </h2>
             <p className="text-slate-500 mt-4 text-base md:text-lg">
-              Everything you loved about your ledger file. Everything it could never do.
+              An 80-year-old Japanese method for mindful money — now built into every row of your ledger.
             </p>
           </div>
 
-          {FEATURES.map(({ icon: Icon, iconWrap, title, body }) => (
-            <div
-              key={title}
-              className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-emerald-200 rounded-2xl p-7 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
-            >
-              <div className={`w-12 h-12 rounded-full ${iconWrap} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                <Icon className="w-6 h-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            {KAKEIBO_QUESTIONS.map(({ icon: Icon, iconWrap, question, title, body }) => (
+              <div
+                key={title}
+                className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-emerald-200 rounded-2xl p-7 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
+              >
+                <div className="flex items-center gap-4 mb-5">
+                  <div className={`w-12 h-12 rounded-full ${iconWrap} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    {question}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
@@ -294,8 +314,11 @@ export default function Home() {
                   <span className="badge badge-sm bg-white/20 border-white/30 text-white font-semibold">Popular</span>
                 </div>
                 <div className="text-4xl font-extrabold mt-2">
-                  $5<span className="text-base font-medium opacity-80">/month</span>
+                  $2<span className="text-base font-medium opacity-80">/month</span>
                 </div>
+                <p className="text-sm opacity-90 mt-2 leading-snug">
+                  Less than the cost of a coffee. Designed to help you save for thousands.
+                </p>
                 <ul className="mt-5 space-y-2.5 text-sm">
                   {[
                     'Everything in Free',

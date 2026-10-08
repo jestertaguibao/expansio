@@ -12,6 +12,7 @@ export interface Category {
   user_id: string | null;
   name: string;
   type: 'expense' | 'income';
+  is_archived?: boolean; // soft-delete: hidden from pickers, retained for history
   created_at?: string;
 }
 
