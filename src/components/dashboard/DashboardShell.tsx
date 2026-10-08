@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { Category, Expense, Profile, TimeFilter, UserTier } from '@/types/database';
 import {
@@ -659,6 +659,30 @@ export default function DashboardShell() {
     }
   };
 
+  /* Reused filter panel: rendered inside the mobile <details> accordion OR the permanent
+     desktop column. SidebarFilters is fully controlled (all state lives up here), so placing
+     the same element in both spots is safe — only one is visible per breakpoint. */
+  const filtersPanel = (
+    <SidebarFilters
+      activeTimeFilter={activeTimeFilter}
+      onTimeFilterChange={setActiveTimeFilter}
+      userTier={userTier}
+      onOpenDonorModal={() => setDonorModalOpen(true)}
+      onExportCsv={handleExportCsv}
+      onExportExcel={handleExportExcel}
+      excelExporting={excelExporting}
+      categories={categories}
+      selectedCategory={selectedCategory}
+      onSelectCategory={setSelectedCategory}
+      selectedType={selectedType}
+      onSelectType={setSelectedType}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      referenceDate={referenceDate}
+      onReferenceDateChange={setReferenceDate}
+    />
+  );
+
   return (
     <div className="min-h-screen bg-base-100 flex flex-col font-sans">
       {/* Top Header */}
@@ -677,40 +701,35 @@ export default function DashboardShell() {
         {/* Supabase Notice Banner if not connected */}
         <EnvConfigBanner />
 
-        {/* Section 1: Top Metric Cards */}
-        <div className="mb-8">
-          <MetricCards
-            totalIncome={metrics.totalIncome}
-            totalExpenses={metrics.totalExpenses}
-            netBalance={metrics.netBalance}
-            transactionCount={metrics.transactionCount}
-            activeTimeFilter={activeTimeFilter}
-            currency={currency}
-          />
-        </div>
+        {/* Section 1: Sticky totals deck — rendered as a DIRECT child of <main>
+            (no short wrapper div) so its sticky containing block is the tall <main>,
+            letting Income/Expense stay pinned while the ledger scrolls underneath. */}
+        <MetricCards
+          totalIncome={metrics.totalIncome}
+          totalExpenses={metrics.totalExpenses}
+          netBalance={metrics.netBalance}
+          transactionCount={metrics.transactionCount}
+          activeTimeFilter={activeTimeFilter}
+          currency={currency}
+        />
 
         {/* Section 2 & 3: Sidebar / Quick Views + Spreadsheet Ledger */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-          {/* Left Column: Sidebar / Quick Views Panel */}
-          <div className="lg:col-span-1 space-y-6">
-            <SidebarFilters
-              activeTimeFilter={activeTimeFilter}
-              onTimeFilterChange={setActiveTimeFilter}
-              userTier={userTier}
-              onOpenDonorModal={() => setDonorModalOpen(true)}
-              onExportCsv={handleExportCsv}
-              onExportExcel={handleExportExcel}
-              excelExporting={excelExporting}
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              selectedType={selectedType}
-              onSelectType={setSelectedType}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              referenceDate={referenceDate}
-              onReferenceDateChange={setReferenceDate}
-            />
+          {/* Left Column: Filters.
+              - < lg (mobile/tablet): collapsible <details> accordion, CLOSED by default to
+                reclaim vertical space, with a "Tune View & Filters" summary.
+              - lg+ (desktop): collapse stripped → filters permanently visible in the column. */}
+          <div className="lg:col-span-1">
+            <details className="lg:hidden">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl border border-base-200 bg-base-100 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm [&::-webkit-details-marker]:hidden">
+                <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
+                <span>Tune View &amp; Filters</span>
+                <ChevronDown className="ml-auto w-4 h-4 text-slate-400 transition-transform [details[open]_&]:rotate-180" />
+              </summary>
+              <div className="mt-2">{filtersPanel}</div>
+            </details>
+
+            <div className="hidden lg:block">{filtersPanel}</div>
           </div>
 
           {/* Right Column: Spreadsheet Ledger Grid */}

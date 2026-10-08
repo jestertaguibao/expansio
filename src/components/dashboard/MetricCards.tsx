@@ -34,10 +34,13 @@ export default function MetricCards({
   const periodLabel = timeFilterLabels[activeTimeFilter] || 'Active Period';
 
   return (
-    /* Mobile (< sm): sticky strip pinned under the navbar, compact 2-column grid
-       showing only Income + Expense (Balance/Savings hidden to save vertical space).
-       Desktop (sm+): original multi-row grid layout is preserved. */
-    <div className="max-sm:sticky max-sm:top-16 max-sm:z-40 max-sm:bg-base-100/95 max-sm:backdrop-blur-sm max-sm:border-b max-sm:border-slate-200 max-sm:shadow-sm max-sm:-mx-4 max-sm:px-4 max-sm:pt-4 max-sm:pb-2">
+    /* Sticky totals deck. Rendered as a DIRECT child of <main> (see DashboardShell) so its
+       sticky containing block is the tall <main> — this keeps Income/Expense pinned while the
+       ledger scrolls underneath. top-16 docks it just below the 4rem sticky navbar; z-40 sits
+       above ledger content but below the mobile floating bar (z-50). Solid bg + backdrop-blur
+       so rows slide cleanly under it. On mobile the strip bleeds edge-to-edge (-mx-4/px-4) and
+       shows a compact 2-column grid of Income + Expense (Balance/Savings hidden). */
+    <div className="sticky top-16 z-40 mb-6 bg-base-100/95 backdrop-blur-md border-b border-slate-100 shadow-sm pt-3 pb-3 sm:mb-8 max-sm:-mx-4 max-sm:px-4">
       <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
       {/* Total Income */}
       <div className="stat p-3 sm:p-6 bg-base-100 border border-base-200 rounded-box shadow-sm">
