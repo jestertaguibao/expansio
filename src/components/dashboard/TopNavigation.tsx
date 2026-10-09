@@ -44,7 +44,8 @@ export default function TopNavigation({
   return (
     <header className="navbar bg-base-100 shadow-sm sticky top-0 z-30">
       <div className="navbar-start">
-        <div className="flex w-full min-w-0 items-center justify-between gap-2 sm:gap-3">
+        {/* Brand group: icon tile + title/subtitle locked together on the left. */}
+        <div className="flex min-w-0 items-center gap-3">
           <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg shadow-sm flex shrink-0">
             <Wallet className="w-5 h-5 text-white" />
           </div>
