@@ -44,13 +44,14 @@ export default function TopNavigation({
   return (
     <header className="navbar bg-base-100 shadow-sm sticky top-0 z-30">
       <div className="navbar-start">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex w-full min-w-0 items-center justify-between gap-2 sm:gap-3">
           <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg shadow-sm flex shrink-0">
             <Wallet className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-slate-800 whitespace-nowrap">EXPENSIO</span>
+              <span className="shrink-0 whitespace-nowrap font-bold text-base tracking-tight text-slate-800">EXPENSIO</span>
+              {/* Version + tagline are secondary titles: never render them on mobile. */}
               <span className="badge badge-ghost badge-sm hidden font-mono text-slate-500 sm:inline-flex">v1.0</span>
             </div>
             <p className="text-[11px] text-slate-500 font-normal hidden sm:block">Excel-like Expense Ledger</p>
@@ -58,21 +59,24 @@ export default function TopNavigation({
         </div>
       </div>
 
-      <div className="navbar-center hidden lg:flex">
-        {configured ? (
-          <div className="badge badge-success gap-1 text-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <Database className="w-3.5 h-3.5" />
-            <span>Supabase Live</span>
-          </div>
-        ) : (
-          <div className="badge badge-warning gap-1 text-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Interactive Demo Mode</span>
-          </div>
-        )}
-      </div>
+      {/* Infra status telemetry (Supabase live / demo mode) — admin eyes only. */}
+      {isAdmin && (
+        <div className="navbar-center hidden lg:flex">
+          {configured ? (
+            <div className="badge badge-success gap-1 text-slate-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+              <Database className="w-3.5 h-3.5" />
+              <span>Supabase Live</span>
+            </div>
+          ) : (
+            <div className="badge badge-warning gap-1 text-slate-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Interactive Demo Mode</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="navbar-end flex-1 min-w-0 justify-end gap-1 sm:gap-2">
         {/* Admin Panel Link — only visible to admins */}
