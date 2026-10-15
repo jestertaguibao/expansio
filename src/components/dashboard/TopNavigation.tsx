@@ -60,36 +60,34 @@ export default function TopNavigation({
         </div>
       </div>
 
-      {/* Infra status telemetry (Supabase live / demo mode) — admin eyes only. */}
-      {isAdmin && (
-        <div className="navbar-center hidden lg:flex">
-          {configured ? (
-            <div className="badge badge-success gap-1 text-slate-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-              <Database className="w-3.5 h-3.5" />
-              <span>Supabase Live</span>
-            </div>
-          ) : (
-            <div className="badge badge-warning gap-1 text-slate-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Interactive Demo Mode</span>
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="navbar-end flex-1 min-w-0 justify-end gap-1 sm:gap-2">
-        {/* Admin Panel Link — only visible to admins */}
+        {/* Admin/developer cluster: status telemetry + User Management live in their
+            own spaced group (mr-4) so they can never collide with the main nav links
+            the way the old absolutely-centered navbar-center did. Admins only. */}
         {isAdmin && (
-          <Link
-            href="/admin/users"
-            className="btn btn-sm btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">User Management</span>
-            <span className="lg:hidden">Admin</span>
-          </Link>
+          <div className="mr-2 flex min-w-0 items-center gap-2 sm:mr-4">
+            {configured ? (
+              <div className="badge badge-success hidden gap-1 text-slate-700 lg:inline-flex">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                <Database className="w-3.5 h-3.5" />
+                <span>Supabase Live</span>
+              </div>
+            ) : (
+              <div className="badge badge-warning hidden gap-1 text-slate-700 lg:inline-flex">
+                <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Interactive Demo Mode</span>
+              </div>
+            )}
+            <Link
+              href="/admin/users"
+              className="btn btn-sm btn-ghost text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">User Management</span>
+              <span className="lg:hidden">Admin</span>
+            </Link>
+          </div>
         )}
 
         <button

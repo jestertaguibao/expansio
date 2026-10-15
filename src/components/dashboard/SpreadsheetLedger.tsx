@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Expense, Category } from '@/types/database';
 import {
   Plus,
@@ -24,6 +24,8 @@ interface SpreadsheetLedgerProps {
   onAddRow: () => Promise<void>;
   savingRowIds: Record<string, 'saving' | 'saved' | 'error'>;
   isLoading: boolean;
+  /** Below-md only: tapping a row opens the touch-friendly MobileEditModal. */
+  onRowTap?: (expense: Expense) => void;
 }
 
 export default function SpreadsheetLedger({
@@ -34,9 +36,20 @@ export default function SpreadsheetLedger({
   onAddRow,
   savingRowIds,
   isLoading,
+  onRowTap,
 }: SpreadsheetLedgerProps) {
   // Track active editing cell if needed, or row edits
   const [activeCell, setActiveCell] = useState<{ id: string; field: string } | null>(null);
+
+  // Tap-to-edit applies strictly below md (768px); desktop keeps inline editing.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   return (
     <div className="bg-base-100 border border-base-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
@@ -47,7 +60,8 @@ export default function SpreadsheetLedger({
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>SHEET1: LEDGER</span>
           </div>
-          <span className="text-xs text-slate-500 hidden sm:inline">
+          <span className="text-xs text-slate-500 md:hidden">Tap any row to edit</span>
+          <span className="hidden text-xs text-slate-500 md:inline">
             Click any cell to edit & auto-save
           </span>
         </div>
@@ -125,7 +139,10 @@ export default function SpreadsheetLedger({
                 return (
                   <tr
                     key={expense.id}
-                    className="hover:bg-base-50 transition-colors group relative"
+                    onClick={() => {
+                      if (isMobile && onRowTap) onRowTap(expense);
+                    }}
+                    className="group relative transition-colors hover:bg-base-50 max-md:cursor-pointer max-md:active:bg-base-200"
                   >
                     {/* Row Index + Status Dot */}
                     <td className="px-3 py-2 text-center text-slate-500 font-mono text-[11px] bg-base-50 border-r border-base-200 select-none">
@@ -151,7 +168,7 @@ export default function SpreadsheetLedger({
                         onChange={(e) =>
                           onUpdateExpense(expense.id, { expense_date: e.target.value })
                         }
-                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer max-md:pointer-events-none"
                       />
                     </td>
 
@@ -167,7 +184,7 @@ export default function SpreadsheetLedger({
                             categories: newCat,
                           });
                         }}
-                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer truncate"
+                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer truncate max-md:pointer-events-none"
                       >
                         <option value="" disabled className="bg-white text-slate-500">
                           Select category...
@@ -210,7 +227,7 @@ export default function SpreadsheetLedger({
                             const val = parseFloat(e.target.value) || 0;
                             onUpdateExpense(expense.id, { amount: val });
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-right border border-transparent focus:border-emerald-500/50 transition-all outline-none ${
+                          className={`w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-right border border-transparent focus:border-emerald-500/50 transition-all outline-none max-md:pointer-events-none ${
                             isIncome ? 'text-emerald-600 font-semibold' : 'text-slate-700'
                           }`}
                         />
@@ -226,7 +243,7 @@ export default function SpreadsheetLedger({
                         onChange={(e) =>
                           onUpdateExpense(expense.id, { notes: e.target.value })
                         }
-                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 placeholder-slate-400 border border-transparent focus:border-emerald-500/50 transition-all outline-none"
+                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 placeholder-slate-400 border border-transparent focus:border-emerald-500/50 transition-all outline-none max-md:pointer-events-none"
                       />
                     </td>
 
@@ -236,7 +253,7 @@ export default function SpreadsheetLedger({
                         type="button"
                         onClick={() => onDeleteExpense(expense.id)}
                         title="Delete row"
-                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-70 group-hover:opacity-100 cursor-pointer"
+                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-70 group-hover:opacity-100 cursor-pointer max-md:pointer-events-none"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

@@ -13,11 +13,13 @@ import {
   filterExpensesByTime,
   getTodayDateString,
   exportExpensesToCsv,
+  formatCurrency,
 } from '@/lib/utils';
 import TopNavigation from './TopNavigation';
 import MetricCards from './MetricCards';
 import SidebarFilters from './SidebarFilters';
 import SpreadsheetLedger from './SpreadsheetLedger';
+import MobileEditModal, { MobileSheetValues } from './MobileEditModal';
 import DonorModal from './DonorModal';
 import CategoryModal from './CategoryModal';
 import SettingsModal from './SettingsModal';
@@ -39,6 +41,9 @@ export default function DashboardShell() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Lifetime metric — independent of the active date filters. null = not fetched yet.
+  const [lifetimeBalance, setLifetimeBalance] = useState<number | null>(null);
+
   // Saving states per row (e.g. { 'exp-1': 'saving' | 'saved' | 'error' })
   const [savingRowIds, setSavingRowIds] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
 
@@ -54,6 +59,14 @@ export default function DashboardShell() {
   const [categoryModalOpen, setCategoryModalOpen] = useState<boolean>(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState<boolean>(false);
+
+  // Mobile bottom-sheet state: opens in "create" mode from the floating bar
+  // (+Income/+Expense) or in "edit" mode when a ledger row is tapped.
+  const [mobileSheet, setMobileSheet] = useState<
+    | { mode: 'create'; defaultType: 'income' | 'expense' }
+    | { mode: 'edit'; expense: Expense }
+    | null
+  >(null);
 
   // Excel export (server-backed) in-flight flag
   const [excelExporting, setExcelExporting] = useState<boolean>(false);
@@ -210,7 +223,7 @@ export default function DashboardShell() {
       try {
         const supabase = createClient();
         // Prepare DB fields (exclude client joined category object)
-        const dbPayload: Record<string, any> = {
+        const dbPayload: Record<string, unknown> = {
           updated_at: new Date().toISOString(),
         };
 
@@ -372,6 +385,80 @@ export default function DashboardShell() {
       setSavingRowIds((prev) => ({ ...prev, [tempId]: 'error' }));
       setExpenses((prev) => prev.filter((e) => e.id !== tempId));
     }
+  };
+
+  // Create a fully-formed row from the mobile sheet's "Add Transaction" mode.
+  // Mirrors handleAddRow's optimistic flow but with real values, and throws so
+  // the sheet can surface failures inline.
+  const handleCreateExpense = async (values: MobileSheetValues) => {
+    const tempId = `exp-${Date.now()}`;
+    const newExpense: Expense = {
+      id: tempId,
+      user_id: userId || 'demo-user-123',
+      category_id: values.category_id ?? null,
+      amount: values.amount,
+      expense_date: values.expense_date || getTodayDateString(),
+      notes: values.notes,
+      created_at: new Date().toISOString(),
+      categories: values.categories,
+    };
+
+    setExpenses((prev) => {
+      const updated = [newExpense, ...prev];
+      persistDemoExpenses(updated);
+      return updated;
+    });
+
+    if (!configured) {
+      setSavingRowIds((prev) => ({ ...prev, [tempId]: 'saved' }));
+      setTimeout(() => {
+        setSavingRowIds((prev) => {
+          const next = { ...prev };
+          delete next[tempId];
+          return next;
+        });
+      }, 1200);
+      return;
+    }
+
+    if (!userId) {
+      setExpenses((prev) => prev.filter((e) => e.id !== tempId));
+      throw new Error('You must be signed in to add transactions.');
+    }
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert({
+        user_id: userId,
+        category_id: newExpense.category_id,
+        amount: newExpense.amount,
+        expense_date: newExpense.expense_date,
+        notes: newExpense.notes,
+      })
+      .select('*, categories(*)')
+      .single();
+
+    if (error) {
+      console.error('[Expansio] handleCreateExpense insert failed:', error.message);
+      setExpenses((prev) => prev.filter((e) => e.id !== tempId));
+      throw new Error('Could not save the new transaction. Please try again.');
+    }
+
+    // Swap temp row for the live Supabase record and flash the saved state.
+    setExpenses((prev) =>
+      prev.map((e) =>
+        e.id === tempId ? { ...data, categories: data.categories || newExpense.categories } : e
+      )
+    );
+    setSavingRowIds((prev) => ({ ...prev, [data.id]: 'saved' }));
+    setTimeout(() => {
+      setSavingRowIds((prev) => {
+        const next = { ...prev };
+        delete next[data.id];
+        return next;
+      });
+    }, 1200);
   };
 
   // Delete row handler
@@ -614,6 +701,58 @@ export default function DashboardShell() {
     if (error) throw error;
   };
 
+  // Dedicated lifetime-balance query. Deliberately separate from the filtered
+  // ledger fetch: it pulls EVERY transaction for the authenticated user with no
+  // date-range predicates (.gte/.lte are never applied here) and sums
+  // Total Income − Total Expenses.
+  const fetchLifetimeBalance = useCallback(async (uid: string) => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('amount, categories(type)')
+        .eq('user_id', uid);
+
+      if (error || !data) {
+        console.error('[Expansio] Lifetime balance fetch failed:', error);
+        return;
+      }
+
+      type LifetimeRow = { amount: number | string | null; categories: { type: string } | null };
+      let balance = 0;
+      for (const row of data as unknown as LifetimeRow[]) {
+        const amount = Number(row.amount) || 0;
+        balance += row.categories?.type === 'income' ? amount : -amount;
+      }
+      setLifetimeBalance(balance);
+    } catch (err) {
+      console.error('[Expansio] Unexpected error in fetchLifetimeBalance:', err);
+    }
+  }, []);
+
+  // Keep the all-time figure in sync: re-query after the ledger settles
+  // (initial load, added rows, debounced inline saves, deletions).
+  useEffect(() => {
+    if (!configured || !userId || isLoading) return;
+    const t = setTimeout(() => fetchLifetimeBalance(userId), 800);
+    return () => clearTimeout(t);
+  }, [expenses, configured, userId, isLoading, fetchLifetimeBalance]);
+
+  // Demo mode equivalent: same lifetime math computed from the local ledger.
+  const demoLifetimeBalance = useMemo(() => {
+    if (configured) return null;
+    let balance = 0;
+    for (const item of expenses) {
+      const cat = item.categories || categories.find((c) => c.id === item.category_id);
+      const amount = Number(item.amount) || 0;
+      balance += cat?.type === 'income' ? amount : -amount;
+    }
+    return balance;
+  }, [configured, expenses, categories]);
+
+  // Single all-time figure consumed by the sticky deck and the mobile floating bar.
+  const allTimeBalance = configured ? lifetimeBalance : demoLifetimeBalance;
+
   // Filtered expenses based on time horizon, category, type, and search query
   const filteredExpenses = useMemo(() => {
     // 1. Time horizon filter
@@ -673,8 +812,6 @@ export default function DashboardShell() {
     return {
       totalIncome: income,
       totalExpenses: expense,
-      netBalance: income - expense,
-      transactionCount: filteredExpenses.length,
     };
   }, [filteredExpenses, categories]);
 
@@ -796,18 +933,18 @@ export default function DashboardShell() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 max-sm:pb-28">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 max-sm:pb-36">
         {/* Supabase Notice Banner if not connected */}
         <EnvConfigBanner />
 
         {/* Section 1: Sticky totals deck — rendered as a DIRECT child of <main>
             (no short wrapper div) so its sticky containing block is the tall <main>,
-            letting Income/Expense stay pinned while the ledger scrolls underneath. */}
+            letting Income/Expense stay pinned while the ledger scrolls underneath.
+            Income/Expenses are period-filtered; All-Time Balance is lifetime-wide. */}
         <MetricCards
           totalIncome={metrics.totalIncome}
           totalExpenses={metrics.totalExpenses}
-          netBalance={metrics.netBalance}
-          transactionCount={metrics.transactionCount}
+          lifetimeBalance={allTimeBalance}
           activeTimeFilter={activeTimeFilter}
           currency={currency}
         />
@@ -841,30 +978,51 @@ export default function DashboardShell() {
               onAddRow={() => handleAddRow()}
               savingRowIds={savingRowIds}
               isLoading={isLoading}
+              onRowTap={(expense) => setMobileSheet({ mode: 'edit', expense })}
             />
           </div>
         </div>
       </main>
 
       {/* Floating Quick-Add Bar (mobile only) — mirrors the desktop "Add Row" action,
-         pre-selecting an income vs. expense category so the new row lands typed. */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 flex gap-3 sm:hidden">
-        <button
-          type="button"
-          onClick={() => handleAddRow('income')}
-          className="btn flex-1 border-none bg-emerald-600 text-white font-semibold hover:bg-emerald-700 active:bg-emerald-800 shadow-lg shadow-emerald-600/30 gap-1.5"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Income</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleAddRow('expense')}
-          className="btn flex-1 border-none bg-rose-600 text-white font-semibold hover:bg-rose-700 active:bg-rose-800 shadow-lg shadow-rose-600/30 gap-1.5"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Expense</span>
-        </button>
+         pre-selecting an income vs. expense category so the new row lands typed.
+         Frosted container keeps it legible over scrolling ledger rows, with the
+         All-Time Balance pinned above the two quick actions. */}
+      <div className="fixed bottom-4 left-4 right-4 z-50 sm:hidden">
+        <div className="rounded-2xl border border-base-200 bg-base-100/90 p-3 shadow-xl backdrop-blur-md">
+          <div className="mb-3 flex items-center justify-between rounded-full border border-slate-200 bg-slate-100/90 px-4 py-2 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-800/90">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Lifetime Balance
+            </span>
+            <span
+              className={`text-sm font-bold ${
+                allTimeBalance !== null && allTimeBalance < 0
+                  ? 'text-rose-600'
+                  : 'text-slate-900 dark:text-white'
+              }`}
+            >
+              {allTimeBalance === null ? '—' : formatCurrency(allTimeBalance, currency)}
+            </span>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileSheet({ mode: 'create', defaultType: 'income' })}
+              className="btn flex-1 border-none bg-emerald-600 text-white font-semibold hover:bg-emerald-700 active:bg-emerald-800 shadow-lg shadow-emerald-600/30 gap-1.5"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Income</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileSheet({ mode: 'create', defaultType: 'expense' })}
+              className="btn flex-1 border-none bg-rose-600 text-white font-semibold hover:bg-rose-700 active:bg-rose-800 shadow-lg shadow-rose-600/30 gap-1.5"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Expense</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
@@ -898,6 +1056,33 @@ export default function DashboardShell() {
         onClose={() => setFeedbackModalOpen(false)}
         userTier={userTier}
       />
+
+      {/* Touch-friendly create/edit sheet. key remounts per row (or per type in
+          create mode) so the form seeds fresh from props — no sync effects. */}
+      {mobileSheet && (
+        <MobileEditModal
+          key={mobileSheet.mode === 'edit' ? mobileSheet.expense.id : `create-${mobileSheet.defaultType}`}
+          isOpen
+          mode={mobileSheet.mode}
+          expense={mobileSheet.mode === 'edit' ? mobileSheet.expense : null}
+          defaultType={mobileSheet.mode === 'create' ? mobileSheet.defaultType : undefined}
+          categories={categories}
+          currency={currency}
+          onClose={() => setMobileSheet(null)}
+          onSubmit={async (values) => {
+            if (mobileSheet.mode === 'edit') {
+              await handleUpdateExpense(mobileSheet.expense.id, values);
+            } else {
+              await handleCreateExpense(values);
+            }
+            setMobileSheet(null);
+          }}
+          onDelete={async (id) => {
+            await handleDeleteExpense(id);
+            setMobileSheet(null);
+          }}
+        />
+      )}
     </div>
   );
 }
