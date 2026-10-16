@@ -17,18 +17,21 @@ export const siteUrl = 'https://expensio.online';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'EXPENSIO | Excel-like Expense Tracker & Ledger',
+    default: 'EXPENSIO — Open Source Kakeibo Expense Tracker & Digital Ledger',
     template: '%s | EXPENSIO',
   },
   description:
-    'EXPENSIO is a lightweight, lightning-fast Excel-like ledger for tracking personal and business income and expenses. Inline editing, real-time sync, and instant analytics — free at expensio.online.',
+    'EXPENSIO is a free, open source personal expense tracker and online ledger that brings the Japanese Kakeibo method into the digital age. Spreadsheet-fast inline editing, real-time sync, and instant analytics — a Next.js budgeting app at expensio.online.',
   keywords: [
+    'open source personal expense tracker',
+    'kakeibo method digital tracker',
+    'next.js budgeting app',
     'expense tracker',
     'online ledger',
     'spreadsheet expense tracker',
     'personal finance app',
-    'business expense ledger',
     'income and expense tracker',
+    'mindful spending app',
     'expensio',
   ],
   authors: [{ name: 'EXPENSIO', url: siteUrl }],
@@ -39,25 +42,20 @@ export const metadata: Metadata = {
     type: 'website',
     url: siteUrl,
     siteName: 'EXPENSIO',
-    title: 'EXPENSIO | Spreadsheet Speed. Modern Ledger Power.',
+    title:
+      'EXPENSIO — Mindful Spending at the Speed of Thought | Kakeibo Digital Tracker',
     description:
-      'Track income and expenses with the familiarity of a spreadsheet, backed by real-time sync and powerful analytics. Get started free on expensio.online.',
+      'A free, Kakeibo-inspired online expense tracker: spreadsheet speed, real-time sync, and analytics that recalculate as you type. Built with Next.js — get started free on expensio.online.',
     locale: 'en_US',
-    images: [
-      {
-        url: '/og-image.png', // drop a 1200x630 image into /public to enable OG sharing
-        width: 1200,
-        height: 630,
-        alt: 'EXPENSIO — Excel-like Expense Ledger',
-      },
-    ],
+    // images come from app/opengraph-image.tsx (Metadata Image File convention)
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EXPENSIO | Excel-like Expense Tracker & Ledger',
+    title:
+      'EXPENSIO — Open Source Kakeibo Expense Tracker & Next.js Budgeting App',
     description:
-      'Spreadsheet speed with modern app power. Track income and expenses in real time — free at expensio.online.',
-    images: ['/og-image.png'],
+      'Track expenses, reflect on habits, and build intentional wealth — one row at a time. Free at expensio.online.',
+    // images come from app/opengraph-image.tsx
   },
   robots: {
     index: true,

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import JsonLd from '@/components/seo/JsonLd';
 import {
   Wallet,
   PiggyBank,
@@ -11,10 +12,97 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'EXPENSIO | Excel-like Expense Tracker & Online Ledger',
+  // The root template would double-brand the "/" segment, so pin the full title.
+  title: {
+    absolute:
+      'EXPENSIO — Open Source Kakeibo Expense Tracker | Next.js Budgeting App',
+  },
   description:
-    'EXPENSIO brings the Japanese art of Kakeibo into the digital age. Track daily expenses with spreadsheet speed, reflect on your habits, and build intentional wealth — one row at a time. Free on expensio.online.',
+    'EXPENSIO is a free, open source personal expense tracker that brings the Japanese Kakeibo method into the digital age. Record income and expenses with spreadsheet-fast inline editing, real-time sync, and instant analytics — one row at a time.',
+  keywords: [
+    'open source personal expense tracker',
+    'kakeibo method digital tracker',
+    'next.js budgeting app',
+    'online expense ledger free',
+    'spreadsheet-style expense tracker',
+    'mindful spending app',
+  ],
   alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    title: 'EXPENSIO — Mindful spending at the speed of thought',
+    description:
+      'A Kakeibo-inspired, spreadsheet-fast digital expense tracker. Free to start, open source at heart.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EXPENSIO — Kakeibo Digital Expense Tracker',
+    description:
+      'Track expenses, reflect on habits, and build intentional wealth — one row at a time.',
+  },
+};
+
+const SITE_URL = 'https://expensio.online';
+
+/* schema.org structured data: WebSite + Organization + SoftwareApplication in
+   one @graph so crawlers can link the app to its publisher and site. */
+const landingJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: 'EXPENSIO',
+      description:
+        'Open source Kakeibo-style personal expense tracker and online ledger.',
+      inLanguage: 'en',
+      publisher: { '@id': `${SITE_URL}/#organization` },
+    },
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: 'EXPENSIO',
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.svg` },
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${SITE_URL}/#app`,
+      name: 'EXPENSIO',
+      applicationCategory: 'FinanceApplication',
+      applicationSubCategory: 'Budgeting',
+      operatingSystem: 'Web browser',
+      url: SITE_URL,
+      downloadUrl: `${SITE_URL}/register`,
+      description:
+        'EXPENSIO is a free, open source personal expense tracker and online ledger built on Kakeibo, the Japanese art of mindful saving. Inline spreadsheet editing, real-time sync, period and lifetime analytics, and CSV/Excel export.',
+      featureList: [
+        'Inline spreadsheet-style editing',
+        'Real-time sync across devices',
+        'Kakeibo four-questions mindful budgeting workflow',
+        'Daily, weekly, monthly and yearly analytics',
+        'All-time lifetime balance tracking',
+        'CSV and Excel export',
+        'Custom income and expense categories',
+      ],
+      offers: [
+        {
+          '@type': 'Offer',
+          name: 'Free Forever',
+          price: '0',
+          priceCurrency: 'USD',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Donor Tier',
+          price: '2',
+          priceCurrency: 'USD',
+        },
+      ],
+    },
+  ],
 };
 
 /* ── Static mock rows for the hero dashboard visual ─────────────────────── */
@@ -96,6 +184,11 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Single <main> landmark: JSON-LD first (invisible to users), then the
+          marketing sections under one <h1> hierarchy. */}
+      <main id="main-content">
+      <JsonLd data={landingJsonLd} />
 
       {/* ─────────────────────────── Hero ─────────────────────────────── */}
       <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-50 via-slate-50 to-white">
@@ -366,6 +459,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      </main>
 
       {/* ─────────────────────────── Footer ───────────────────────────── */}
       <footer className="footer footer-center p-10 bg-slate-50 border-t border-slate-100 text-slate-500">
