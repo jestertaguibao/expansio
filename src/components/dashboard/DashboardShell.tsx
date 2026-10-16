@@ -978,6 +978,7 @@ export default function DashboardShell() {
               onAddRow={() => handleAddRow()}
               savingRowIds={savingRowIds}
               isLoading={isLoading}
+              currency={currency}
               onRowTap={(expense) => setMobileSheet({ mode: 'edit', expense })}
             />
           </div>

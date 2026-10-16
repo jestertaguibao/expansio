@@ -14,7 +14,7 @@ import {
   FileText,
   HelpCircle,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDateDisplay } from '@/lib/utils';
 
 interface SpreadsheetLedgerProps {
   expenses: Expense[];
@@ -24,7 +24,9 @@ interface SpreadsheetLedgerProps {
   onAddRow: () => Promise<void>;
   savingRowIds: Record<string, 'saving' | 'saved' | 'error'>;
   isLoading: boolean;
-  /** Below-md only: tapping a row opens the touch-friendly MobileEditModal. */
+  /** Currency used by the mobile card feed amounts. */
+  currency?: string;
+  /** Below-md only: tapping a table row OR a mobile feed card opens the touch-friendly MobileEditModal. */
   onRowTap?: (expense: Expense) => void;
 }
 
@@ -36,12 +38,14 @@ export default function SpreadsheetLedger({
   onAddRow,
   savingRowIds,
   isLoading,
+  currency = 'USD',
   onRowTap,
 }: SpreadsheetLedgerProps) {
   // Track active editing cell if needed, or row edits
   const [activeCell, setActiveCell] = useState<{ id: string; field: string } | null>(null);
 
   // Tap-to-edit applies strictly below md (768px); desktop keeps inline editing.
+  // The card feed and the spreadsheet table each render for one side of that break.
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -60,7 +64,7 @@ export default function SpreadsheetLedger({
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>SHEET1: LEDGER</span>
           </div>
-          <span className="text-xs text-slate-500 md:hidden">Tap any row to edit</span>
+          <span className="text-xs text-slate-500 md:hidden">Tap any transaction to edit</span>
           <span className="hidden text-xs text-slate-500 md:inline">
             Click any cell to edit & auto-save
           </span>
@@ -70,7 +74,7 @@ export default function SpreadsheetLedger({
           <button
             type="button"
             onClick={onAddRow}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Add Row</span>
@@ -78,8 +82,8 @@ export default function SpreadsheetLedger({
         </div>
       </div>
 
-      {/* Spreadsheet Container with Horizontal Scroll */}
-      <div className="overflow-x-auto w-full">
+      {/* Spreadsheet Container — md and up only; phones get the card feed below. */}
+      <div className="hidden w-full overflow-x-auto md:block">
         <table className="w-full text-left border-collapse min-w-[760px] text-xs font-mono">
           <thead>
             {/* Column coordinate row (Excel Style A, B, C...) */}
@@ -142,7 +146,7 @@ export default function SpreadsheetLedger({
                     onClick={() => {
                       if (isMobile && onRowTap) onRowTap(expense);
                     }}
-                    className="group relative transition-colors hover:bg-base-50 max-md:cursor-pointer max-md:active:bg-base-200"
+                    className="group relative transition-colors hover:bg-base-50"
                   >
                     {/* Row Index + Status Dot */}
                     <td className="px-3 py-2 text-center text-slate-500 font-mono text-[11px] bg-base-50 border-r border-base-200 select-none">
@@ -168,7 +172,7 @@ export default function SpreadsheetLedger({
                         onChange={(e) =>
                           onUpdateExpense(expense.id, { expense_date: e.target.value })
                         }
-                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer max-md:pointer-events-none"
+                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer"
                       />
                     </td>
 
@@ -184,7 +188,7 @@ export default function SpreadsheetLedger({
                             categories: newCat,
                           });
                         }}
-                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer truncate max-md:pointer-events-none"
+                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 border border-transparent focus:border-emerald-500/50 transition-all outline-none cursor-pointer truncate"
                       >
                         <option value="" disabled className="bg-white text-slate-500">
                           Select category...
@@ -227,7 +231,7 @@ export default function SpreadsheetLedger({
                             const val = parseFloat(e.target.value) || 0;
                             onUpdateExpense(expense.id, { amount: val });
                           }}
-                          className={`w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-right border border-transparent focus:border-emerald-500/50 transition-all outline-none max-md:pointer-events-none ${
+                          className={`w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs font-mono text-right border border-transparent focus:border-emerald-500/50 transition-all outline-none ${
                             isIncome ? 'text-emerald-600 font-semibold' : 'text-slate-700'
                           }`}
                         />
@@ -243,7 +247,7 @@ export default function SpreadsheetLedger({
                         onChange={(e) =>
                           onUpdateExpense(expense.id, { notes: e.target.value })
                         }
-                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 placeholder-slate-400 border border-transparent focus:border-emerald-500/50 transition-all outline-none max-md:pointer-events-none"
+                        className="w-full px-2.5 py-1.5 rounded bg-transparent hover:bg-base-100 focus:bg-white focus:ring-1 focus:ring-emerald-500 text-xs text-slate-700 placeholder-slate-400 border border-transparent focus:border-emerald-500/50 transition-all outline-none"
                       />
                     </td>
 
@@ -253,7 +257,7 @@ export default function SpreadsheetLedger({
                         type="button"
                         onClick={() => onDeleteExpense(expense.id)}
                         title="Delete row"
-                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-70 group-hover:opacity-100 cursor-pointer max-md:pointer-events-none"
+                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-70 group-hover:opacity-100 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -266,8 +270,76 @@ export default function SpreadsheetLedger({
         </table>
       </div>
 
+      {/* Mobile-Only Transaction Feed — replaces the squished table below md.
+          Cards reuse onRowTap, so tapping one opens the same MobileEditModal
+          edit mode the table rows used. pb-32 keeps the last card clear of the
+          floating bottom action bar. */}
+      {isMobile && (
+        <div className="flex w-full flex-col pb-32 md:hidden">
+          {expenses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center text-slate-500">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
+                  <span>Loading ledger data...</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-base-300 bg-base-200 text-slate-400">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div className="text-sm font-medium text-slate-700">No transactions in this view</div>
+                  <p className="max-w-sm text-xs text-slate-500">
+                    Change your filters above, or use the +Income / +Expense buttons below to record your first transaction.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            expenses.map((expense) => {
+              const category =
+                expense.categories ||
+                categories.find((c) => c.id === expense.category_id);
+              const isIncome = category?.type === 'income';
+
+              return (
+                <div
+                  key={expense.id}
+                  onClick={() => {
+                    if (onRowTap) onRowTap(expense);
+                  }}
+                  className="flex cursor-pointer flex-col border-b border-slate-100 p-4 transition-colors active:bg-slate-50"
+                >
+                  {/* Top row: category + color-coded amount */}
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-800">
+                      {category?.name || 'Unassigned'}
+                    </span>
+                    <span
+                      className={`text-sm font-bold ${
+                        isIncome ? 'text-emerald-600' : 'text-rose-600'
+                      }`}
+                    >
+                      {isIncome ? '+' : '-'}
+                      {formatCurrency(Math.abs(expense.amount || 0), currency ?? 'USD')}
+                    </span>
+                  </div>
+                  {/* Bottom row: date + truncated memo */}
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>{formatDateDisplay(expense.expense_date) || '—'}</span>
+                    <span className="max-w-[120px] truncate">
+                      {expense.notes || 'No notes'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {/* Spreadsheet Bottom Bar with Quick Add Row & Formula Summary */}
-      <div className="px-5 py-3 border-t border-base-200 bg-base-50 flex items-center justify-between">
+      <div className="hidden items-center justify-between border-t border-base-200 bg-base-50 px-5 py-3 md:flex">
         <button
           type="button"
           onClick={onAddRow}
